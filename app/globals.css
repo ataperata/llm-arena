@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --bg: #f4f0e7;
+  --bg-elev: #fffdf8;
+  --ink: #1c1915;
+  --muted: #5f584f;
+  --line: #e3d9cb;
+  --accent: #b5522a;
+  --accent-ink: #fff7f2;
+  --shadow: 0 24px 60px rgba(48, 32, 16, 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #121410;
+  --bg-elev: #1c1f19;
+  --ink: #f4f0e7;
+  --muted: #c2bbb0;
+  --line: #31362d;
+  --accent: #e08a5d;
+  --accent-ink: #24150e;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+@theme inline {
+  --color-canvas: var(--bg);
+  --color-panel: var(--bg-elev);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-fraunces), ui-serif, georgia, serif;
+}
+
+body {
+  background:
+    radial-gradient(1100px 480px at -10% -20%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 55%),
+    radial-gradient(900px 420px at 110% -10%, color-mix(in oklab, #1f7a6b 18%, transparent), transparent 50%),
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 35%, white);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.stream-caret > div > p:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.95em;
+  margin-left: 2px;
+  transform: translateY(2px);
+  background: var(--accent);
+  animation: caret 1s steps(1) infinite;
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stream-caret > div > p:last-child::after {
+    animation: none;
+  }
+}
