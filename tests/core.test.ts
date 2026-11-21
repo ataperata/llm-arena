@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { getPublicConfig, resolveProviderMode, resolveStorageMode } from "@/lib/config";
 import { createDemoTranscript, demoAnswer, voiceFor } from "@/lib/demo";
@@ -7,7 +7,7 @@ import { buildLeaderboard, latestVotes, upsertVote } from "@/lib/leaderboard";
 import { estimateCostUsd, estimateTokens, formatDuration, formatUsd, parsePricingOverride } from "@/lib/pricing";
 import { parseEventLine } from "@/lib/stream";
 import { summarizeRound } from "@/lib/summary";
-import { rowToVote, voteToRow } from "@/lib/supabase";
+import { listVotes, rowToVote, voteToRow } from "@/lib/supabase";
 import type { Vote } from "@/lib/types";
 import { isVote, readVotes, VOTE_STORAGE_KEY, writeVotes, type KeyValueStore } from "@/lib/votes";
 
@@ -253,5 +253,41 @@ describe("errors and supabase rows", () => {
   it("maps a vote to the arena_votes row and back", () => {
     const stored = vote({ comparisonId: "round-3", winnerModelId: "openai/gpt-5-mini" });
     expect(rowToVote(voteToRow(stored))).toEqual(stored);
+  });
+
+  it("loads leaderboard votes without the prompt column", async () => {
+    const urls: string[] = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      urls.push(String(input instanceof Request ? input.url : input));
+      return new Response(
+        JSON.stringify([
+          {
+            comparison_id: "round-9",
+            winner_model_id: "openai/gpt-5-mini",
+            model_ids: ["openai/gpt-5-mini", "google/gemini-3.8-flash"],
+            created_at: "2026-01-01T00:00:00.000Z",
+          },
+        ]),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const votes = await listVotes({ SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "k" });
+      expect(votes).toEqual([
+        {
+          comparisonId: "round-9",
+          prompt: "",
+          winnerModelId: "openai/gpt-5-mini",
+          modelIds: ["openai/gpt-5-mini", "google/gemini-3.8-flash"],
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]);
+      const select = new URL(urls[0] ?? "").searchParams.get("select") ?? "";
+      expect(select).toContain("winner_model_id");
+      expect(select).not.toContain("prompt");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

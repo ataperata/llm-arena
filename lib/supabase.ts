@@ -57,14 +57,22 @@ export async function saveVote(vote: Vote, env: Env = process.env): Promise<void
   if (error) throw new Error(error.message);
 }
 
+// The leaderboard only counts wins, so the prompt text is left out of the
+// select. Prompts can be thousands of characters and there are up to 2000 rows.
+export const LEADERBOARD_COLUMNS = "comparison_id, winner_model_id, model_ids, created_at";
+
+export function leaderboardRowToVote(row: Omit<VoteRow, "prompt">): Vote {
+  return rowToVote({ ...row, prompt: "" });
+}
+
 export async function listVotes(env: Env = process.env): Promise<Vote[]> {
   const supabase = getSupabase(env);
   const { data, error } = await supabase
     .from("arena_votes")
-    .select("comparison_id, prompt, winner_model_id, model_ids, created_at")
+    .select(LEADERBOARD_COLUMNS)
     .order("created_at", { ascending: false })
     .limit(2000);
   if (error) throw new Error(error.message);
-  const votes = (data ?? []).map((row) => rowToVote(row as VoteRow));
+  const votes = (data ?? []).map((row) => leaderboardRowToVote(row as Omit<VoteRow, "prompt">));
   return latestVotes(votes);
 }
