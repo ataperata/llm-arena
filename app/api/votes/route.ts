@@ -21,6 +21,9 @@ export async function POST(request: Request) {
   if (!isVote(body) || !body.prompt.trim()) {
     return jsonError("That vote is missing a comparison, prompt, or winner.", 400);
   }
+  if (Number.isNaN(Date.parse(body.createdAt))) {
+    return jsonError("That vote has an invalid timestamp.", 400);
+  }
 
   const enabled = new Set(config.models.map((model) => model.id));
   if (!enabled.has(body.winnerModelId) || body.modelIds.some((id) => !enabled.has(id))) {
